@@ -5,34 +5,128 @@ namespace engine
 {
     void OrderBook::addOrder(const Order &order)
     {
-        // two scenarios:
-            // Matching if the order can be field immidelty
-            // Resting if there is quantity left over.
-            
-        // Identify opposite side
-            // If buy look in Asks map
-            // If sell look in Bid map
-            // will get list of order at each price
+        Order remainingOrder = order;
 
-        // Iterate though opposite map
-            // For a Buy order, the Ask Price must be <= Buy Price.
-            // For a Sell order, the Bid Price must be >= Sell Price.
-            // Get Match quantiy min of both orders
-            // update quantities subtracting
-            // Generate possible Trade and record.  will record later but 
-            // clean up delete order if quantity 0 delete from list and ordermap
-        
-        // If order still has quantity > 0
-            // Add order to its side of the book
-            // Make sure to insert OrderId and iterator into map for O(1) cancellation
+        if (remainingOrder.side == Side::Buy) // look in Asks map
+        {
+            auto it = asks.begin();
+            while (it != asks.end() && remainingOrder.quantity > 0 &&
+                   it->first <= remainingOrder.price)
+            {
+                auto &orderList = it->second;
+                auto listIt = orderList.begin();
+
+                while (listIt != orderList.end() && remainingOrder.quantity > 0)
+                {
+                    auto matchQty = std::min(listIt->quantity, remainingOrder.quantity);
+                    // execute Trade here
+
+                    remainingOrder.quantity -= matchQty;
+                    listIt->quantity -= matchQty;
+
+                    if (listIt->quantity == 0)
+                    {
+                        order_map.erase(listIt->id);
+                        listIt = orderList.erase(listIt);
+                    }
+                    else
+                    {
+                        ++listIt;
+                    }
+                }
+                if (orderList.empty())
+                {
+                    it = asks.erase(it); // erase returns the next valid map iterator
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+        }
+        else // Sell look in Bid map
+        {
+            auto it = bids.begin();
+            while (it != bids.end() && remainingOrder.quantity > 0 &&
+                   it->first >= remainingOrder.price)
+            {
+                auto &orderList = it->second;
+                auto listIt = orderList.begin();
+
+                while (listIt != orderList.end() && remainingOrder.quantity > 0)
+                {
+                    auto matchQty = std::min(listIt->quantity, remainingOrder.quantity);
+                    // execute Trade here
+                    remainingOrder.quantity -= matchQty;
+                    listIt->quantity -= matchQty;
+
+                    if (listIt->quantity == 0)
+                    {
+                        order_map.erase(listIt->id);
+                        listIt = orderList.erase(listIt);
+                    }
+                    else
+                    {
+                        ++listIt;
+                    }
+                }
+                if (orderList.empty())
+                {
+                    it = bids.erase(it); // erase returns the next valid map iterator
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+        }
+
+        if (remainingOrder.quantity > 0)
+        {
+            if (remainingOrder.side == Side::Buy)
+            {
+                auto &list = bids[remainingOrder.price];
+                list.push_back(remainingOrder);
+                order_map[remainingOrder.id] = std::prev(list.end());
+            }
+            else
+            {
+                auto &list = asks[remainingOrder.price];
+                list.push_back(remainingOrder);
+                order_map[remainingOrder.id] = std::prev(list.end());
+            }
+        }
     }
 
     void OrderBook::cancelOrder(OrderID id)
     {
         // lookup from oredrmap getting the iteratro
+        auto it = order_map.find(id);
+        if (it == order_map.end())
+            return;
 
-        // Get the details and delete from list in that map
-        // erase id from order_map
+        OrderIter listIt = it->second;
+        Price price = listIt->price;
+        Side side = listIt->side;
+
+        if (side == Side::Buy)
+        {
+            bids[price].erase(listIt);
+            if (bids[price].empty())
+            {
+                bids.erase(price);
+            }
+        }
+        else
+        {
+            asks[price].erase(listIt);
+            if (asks[price].empty())
+            {
+                asks.erase(price);
+            }
+        }
+
+        order_map.erase(it);
     }
 
 }

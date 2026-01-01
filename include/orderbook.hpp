@@ -26,7 +26,3 @@ namespace engine
     };
 }
 
-/*
-To get this compiling and functional, 
-you need to implement addOrder in src/orderBook.cpp.
-*/

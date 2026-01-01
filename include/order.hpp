@@ -9,11 +9,11 @@ namespace engine
     struct alignas(64) Order
     {
         OrderID id;
+        Side side;
         Price price;
         Quantity quantity;
-        Side side;
 
-        Order(OrderID id, Price p, Quantity q, Side s)
-            : id(id), price(p), quantity(q), side(s) {}
+        Order(OrderID id, Side s, Price p, Quantity q)
+            : id(id), side(s), price(p), quantity(q) {}
     };
 }
