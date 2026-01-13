@@ -4,12 +4,16 @@
 #include <unordered_map>
 #include <list>
 #include "order.hpp"
+#include "trade_logger.hpp"
+#include "trade.hpp"
 
 namespace engine
 {
     class OrderBook
     {
     private:
+        TradeLogger logger;
+
         // Bids: Descending (highest price first)
         // Asks: Ascending (lowest price first)
         std::map<Price, std::list<Order>, std::greater<Price>> bids;
@@ -21,8 +25,9 @@ namespace engine
         std::unordered_map<OrderID, OrderIter> order_map;
 
     public:
+        OrderBook() : logger(4096) {}
         void addOrder(const Order &order);
         void cancelOrder(OrderID id);
+        void display() const;
     };
 }
-

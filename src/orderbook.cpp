@@ -19,8 +19,15 @@ namespace engine
                 while (listIt != orderList.end() && remainingOrder.quantity > 0)
                 {
                     auto matchQty = std::min(listIt->quantity, remainingOrder.quantity);
-                    // execute Trade here
+                    
+                    // execute Trade 
+                    Trade trade_record;
+                    trade_record.maker_id = listIt->id;
+                    trade_record.taker_id = remainingOrder.id;
+                    trade_record.price = listIt->price; // Always executed at Maker's price
+                    trade_record.quantity = matchQty;
 
+                    logger.logTrade(trade_record);
                     remainingOrder.quantity -= matchQty;
                     listIt->quantity -= matchQty;
 
